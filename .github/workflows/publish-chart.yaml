@@ -20,7 +20,15 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push the Helm Charts to GitHub Container Registry
-        uses: JimCronqvist/action-helm-chart-repo@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Dependencies
+        run: |
+          helm dep up .
+
+      - name: Build the Helm Chart
+        run: |
+          helm package . -u --destination ./dist
+
+      - name: Publish Helm Chart
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN}}" | helm registry login ghcr.io/${{github.repository}} --username ${GITHUB_ACTOR} --password-stdin
+          helm push ./dist/redis-*.tgz oci://ghcr.io/${{github.repository}}
